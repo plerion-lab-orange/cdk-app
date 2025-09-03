@@ -18,8 +18,9 @@ export class SampleAppCdkStack extends Stack {
       timeout: Duration.seconds(10),
       bundling: {
         minify: false,
-        externalModules: [],
+        externalModules: ['aws-sdk', 'axios', 'lodash'] as string[],
         sourcesContent: false,
+        bundle: false,
         commandHooks: {
           beforeBundling(_inputDir: string, _outputDir: string): string[] {
             return [];
@@ -28,9 +29,11 @@ export class SampleAppCdkStack extends Stack {
             return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
-            // Ensure package-lock.json from the repo root is included in the Lambda artifact
+            // Copy package files and install only production dependencies
             return [
-              `bash -lc "if [ -f ${inputDir}/package-lock.json ]; then cp ${inputDir}/package-lock.json ${outputDir}/package-lock.json; fi"`
+              `bash -lc "if [ -f ${inputDir}/package.json ]; then cp ${inputDir}/package.json ${outputDir}/package.json; fi"`,
+              `bash -lc "if [ -f ${inputDir}/package-lock.json ]; then cp ${inputDir}/package-lock.json ${outputDir}/package-lock.json; fi"`,
+              `bash -lc "cd ${outputDir} && npm ci --only=production --no-audit --no-fund --ignore-scripts"`
             ];
           }
         }
